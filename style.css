@@ -1,0 +1,132 @@
+/* ====== НАМЕРЕННО НЕСТАНДАРТНАЯ ПАЛИТРА ====== */
+        :root {
+            --bg-main: #0b1020;           /* Глубокий тёмный фон */
+            --bg-panel: #111827;          /* Панели */
+            --accent-1: #00ff00;          /* Розовый акцент */
+            --accent-2: #22d3ee;          /* Голубой акцент */
+            --text-main: #e5e7eb;         /* Основной текст */
+            --text-muted: #27d9b3;        /* Вторичный текст */
+            --radius-soft: 18px;
+        }
+
+        /* ====== СБРОС ====== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Courier New", monospace;
+            background: radial-gradient(circle at top, #1f2933, var(--bg-main));
+            color: var(--text-main);
+        }
+
+        a {
+            color: var(--accent-2);
+            text-decoration: none;
+        }
+
+        /* ====== СЛОИСТАЯ СТРУКТУРА СТРАНИЦЫ ====== */
+        .scene {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            padding: 48px;
+        }
+
+        /* ====== ЗАГОЛОВОК В ВИДЕ ТЕРМИНАЛА ====== */
+        .terminal {
+            background-color: var(--bg-panel);
+            border-radius: var(--radius-soft);
+            padding: 24px 28px;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.05);
+        }
+
+        .terminal-title {
+            color: var(--accent-1);
+            margin-bottom: 12px;
+        }
+
+        .terminal-line {
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        /* ====== НАВИГАЦИЯ-КОМАНДЫ ====== */
+        .command-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .command {
+            padding: 8px 14px;
+            border: 1px dashed var(--accent-2);
+            border-radius: var(--radius-soft);
+            font-size: 14px;
+        }
+
+        .command:hover {
+            background-color: rgba(34,211,238,0.1);
+        }
+
+        /* ====== КОНТЕНТ В ВИДЕ МОДУЛЕЙ ====== */
+        .modules {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 32px;
+        }
+
+        .module {
+            background-color: var(--bg-panel);
+            padding: 24px;
+            border-radius: var(--radius-soft);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-left: 4px solid var(--accent-1);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .module-title {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--accent-2);
+        }
+
+        .module-text {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        .contacts-link {
+            color:var(--text-muted);
+        }
+
+        /* ====== ФИНАЛЬНЫЙ БЛОК ====== */
+        .outro {
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: auto;
+            transition: 
+                text-shadow 0.4s ease-in,
+                transform 0.4s ease-in,
+                color 0.4s ease-in;
+        }
+        .outro:hover {
+            color: #93cae7;
+            text-shadow:
+                0 0 4px #3dd6ad,
+                0 0 8px #3dd6ad,
+                0 0 16px #3dd6ad;
+            transform:scale(1.03);
+        }
