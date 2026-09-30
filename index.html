@@ -1,61 +1,702 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Личная веб-страница</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>English Quiz</title>
+    
+    <!-- Шрифты -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<div class="scene">
+    <!-- React 18 и Babel для запуска прямо в браузере без сборщиков -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- ====== TERMINAL HEADER ====== -->
-    <header class="terminal">
-        <div class="terminal-title">$ atheron</div>
-        <div class="terminal-line">Студент, экспериментатор, веб.</div>
-        <div class="terminal-line">Личная страница в формате интерфейса.</div>
+    <style>
+      :root {
+        --bg: #0d131f;
+        --card: #151d2d;
+        --card2: #1c273c;
+        --border: rgba(255, 255, 255, 0.08);
+        --text: #f0f4f8;
+        --muted: #8b9bb4;
+        --yellow: #f5c518;
+      }
 
-        <nav class="command-list">
-            <a href="about/index.html" class="command">about</a>
-            <a href="projects/index.html" class="command">projects</a>
-            <a href="contacts/index.html" class="command">contacts</a>
-        </nav>
-    </header>
+      * {
+        box-sizing: border-box;
+      }
 
-    <!-- ====== MODULES ====== -->
-    <section class="modules">
+      body {
+        margin: 0;
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: 'Outfit', sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
 
-        <div class="module" id="about">
-            <div class="module-title">/about</div>
-            <div class="module-text">
-                Для будущего резюме
+      .font-display {
+        font-family: 'Fraunces', serif;
+      }
+
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes pop {
+        0% { transform: scale(0.96); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+
+      @keyframes confettiFall {
+        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+      }
+
+      .anim-slide-up {
+        animation: slideUp 0.4s ease-out forwards;
+      }
+
+      .anim-pop {
+        animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      }
+
+      @media (max-width: 768px) {
+        .quiz-grid {
+          grid-template-columns: 1fr !important;
+        }
+        .options-grid {
+          grid-template-columns: 1fr !important;
+        }
+        .quiz-sidebar {
+          order: -1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useRef, useCallback } = React;
+
+      // ─── Constants ────────────────────────────────────────────────────────────────
+      const TEAM_COLORS = ['#FF6B6B', '#00C9D4', '#F5C518', '#9B5DE5'];
+      const TIME_PER_QUESTION = 20;
+      const QUESTIONS_PER_CAT = 5;
+
+      const CATS = ['grammar', 'culture', 'music', 'vocabulary'];
+
+      const CAT_META = {
+        grammar:    { label: 'Grammar',    emoji: '📝', color: '#00C9D4', desc: 'Tenses, prepositions & more' },
+        culture:    { label: 'Culture',    emoji: '🌍', color: '#F5C518', desc: 'UK & USA customs & traditions' },
+        music:      { label: 'Music',      emoji: '🎵', color: '#FF6B6B', desc: 'Artists, genres & music vocab' },
+        vocabulary: { label: 'Vocabulary', emoji: '💬', color: '#9B5DE5', desc: 'Idioms, phrasal verbs & words' },
+      };
+
+      // ─── 80-Question Bank ────────────────────────────────────────────────────────
+      const ALL_QUESTIONS = [
+        // ── GRAMMAR (20) ──
+        { id: 1,  category: 'grammar', question: 'She ___ to school every day.',
+          options: ['go', 'goes', 'going', 'went'], correct: 1 },
+        { id: 2,  category: 'grammar', question: 'If I ___ more time, I would learn piano.',
+          options: ['have', 'had', 'has', 'having'], correct: 1 },
+        { id: 3,  category: 'grammar', question: 'They have lived here ___ 2018.',
+          options: ['for', 'since', 'ago', 'during'], correct: 1 },
+        { id: 4,  category: 'grammar', question: 'He was cooking when she ___.',
+          options: ['arrives', 'is arriving', 'arrived', 'has arrived'], correct: 2 },
+        { id: 5,  category: 'grammar', question: 'I ___ never been to Paris.',
+          options: ['have', 'has', 'am', 'was'], correct: 0 },
+        { id: 6,  category: 'grammar', question: 'You should ___ more water every day.',
+          options: ['drink', 'drinking', 'drinks', 'drank'], correct: 0 },
+        { id: 7,  category: 'grammar', question: 'What time ___ the train leave?',
+          options: ['does', 'do', 'is', 'are'], correct: 0 },
+        { id: 8,  category: 'grammar', question: 'She is taller ___ her brother.',
+          options: ['then', 'than', 'that', 'as'], correct: 1 },
+        { id: 9,  category: 'grammar', question: 'The book was written ___ Shakespeare.',
+          options: ['from', 'with', 'by', 'of'], correct: 2 },
+        { id: 10, category: 'grammar', question: 'We were talking when the phone ___.',
+          options: ['rings', 'ring', 'rang', 'ringing'], correct: 2 },
+        { id: 11, category: 'grammar', question: 'She ___ in London for ten years now.',
+          options: ['lives', 'lived', 'has lived', 'was living'], correct: 2 },
+        { id: 12, category: 'grammar', question: 'I wish I ___ how to swim.',
+          options: ['know', 'knew', 'known', 'knows'], correct: 1 },
+        { id: 13, category: 'grammar', question: 'He apologized ___ being late.',
+          options: ['for', 'of', 'about', 'to'], correct: 0 },
+        { id: 14, category: 'grammar', question: '___ you like some coffee?',
+          options: ['Would', 'Will', 'Do', 'Are'], correct: 0 },
+        { id: 15, category: 'grammar', question: 'By the time he arrived, the party ___.',
+          options: ['ended', 'has ended', 'had ended', 'was ending'], correct: 2 },
+        { id: 16, category: 'grammar', question: 'The children are used to ___ early.',
+          options: ['wake', 'woke', 'waking', 'woken'], correct: 2 },
+        { id: 17, category: 'grammar', question: 'I\'d rather ___ home tonight.',
+          options: ['stay', 'staying', 'stayed', 'to stay'], correct: 0 },
+        { id: 18, category: 'grammar', question: 'Pick the correct sentence:',
+          options: ['I have saw that film.', 'I seen that film.', 'I have seen that film.', 'I did seen that film.'], correct: 2 },
+        { id: 19, category: 'grammar', question: '"He\'s been working here ___ three years." Which word fits?',
+          options: ['since', 'for', 'ago', 'during'], correct: 1 },
+        { id: 20, category: 'grammar', question: 'Neither of the students ___ the answer.',
+          options: ['know', 'knows', 'knowing', 'have know'], correct: 1 },
+
+        // ── CULTURE (20) ──
+        { id: 21, category: 'culture', question: 'What is the capital of the United Kingdom?',
+          options: ['Edinburgh', 'Cardiff', 'London', 'Manchester'], correct: 2 },
+        { id: 22, category: 'culture', question: 'What do Americans celebrate on July 4th?',
+          options: ['Easter', 'Independence Day', 'Thanksgiving', 'Halloween'], correct: 1 },
+        { id: 23, category: 'culture', question: 'The UK\'s flag is officially known as:',
+          options: ['Union Jack', 'Stars and Stripes', 'Maple Leaf', 'Rising Sun'], correct: 0 },
+        { id: 24, category: 'culture', question: 'What sport is the Super Bowl championship for?',
+          options: ['Basketball', 'Baseball', 'American Football', 'Soccer'], correct: 2 },
+        { id: 25, category: 'culture', question: 'Which city is nicknamed "The Big Apple"?',
+          options: ['Los Angeles', 'Chicago', 'New York', 'Miami'], correct: 2 },
+        { id: 26, category: 'culture', question: 'What is a "pub" in British culture?',
+          options: ['A park', 'A school', 'A public house / bar', 'A bus station'], correct: 2 },
+        { id: 27, category: 'culture', question: 'What do English speakers say when someone sneezes?',
+          options: ['God bless', 'Bless you', 'Good health', 'Thank you'], correct: 1 },
+        { id: 28, category: 'culture', question: 'Halloween is celebrated on which date?',
+          options: ['October 30', 'October 31', 'November 1', 'December 31'], correct: 1 },
+        { id: 29, category: 'culture', question: 'The official London residence of the British monarch is:',
+          options: ['Windsor Castle', 'Buckingham Palace', 'Tower of London', 'Kensington Palace'], correct: 1 },
+        { id: 30, category: 'culture', question: 'What color is associated with envy in English?',
+          options: ['Red', 'Blue', 'Green', 'Yellow'], correct: 2 },
+        { id: 31, category: 'culture', question: 'A "flat" in British English means:',
+          options: ['A car', 'An apartment', 'A garden', 'A road'], correct: 1 },
+        { id: 32, category: 'culture', question: '"Boxing Day" is celebrated on:',
+          options: ['December 24', 'December 26', 'January 1', 'November 5'], correct: 1 },
+        { id: 33, category: 'culture', question: 'The bald eagle is the national symbol of:',
+          options: ['Canada', 'UK', 'USA', 'Australia'], correct: 2 },
+        { id: 34, category: 'culture', question: '"Black Friday" happens the day after:',
+          options: ['Halloween', 'Christmas', 'Thanksgiving', 'New Year\'s Day'], correct: 2 },
+        { id: 35, category: 'culture', question: '"Fish and chips" is best described as:',
+          options: ['A British dessert', 'A popular British fast food', 'A board game', 'A breakfast dish'], correct: 1 },
+        { id: 36, category: 'culture', question: 'In American English, "fall" refers to which season?',
+          options: ['Winter', 'Spring', 'Summer', 'Autumn'], correct: 3 },
+        { id: 37, category: 'culture', question: 'What is the famous clock tower in London called?',
+          options: ['Big Tower', 'Big Ben', 'The Bell', 'Tower Bridge'], correct: 1 },
+        { id: 38, category: 'culture', question: 'Traditional London taxis are which color?',
+          options: ['Yellow', 'Red', 'Black', 'White'], correct: 2 },
+        { id: 39, category: 'culture', question: 'St. Patrick\'s Day is associated with which country?',
+          options: ['Scotland', 'Wales', 'England', 'Ireland'], correct: 3 },
+        { id: 40, category: 'culture', question: 'What do British people call their subway system?',
+          options: ['The Metro', 'The Tube / Underground', 'The Subway', 'The Rail'], correct: 1 },
+
+        // ── MUSIC (20) ──
+        { id: 41, category: 'music', question: '"Yesterday" was written by which famous band?',
+          options: ['The Rolling Stones', 'The Beatles', 'Led Zeppelin', 'Queen'], correct: 1 },
+        { id: 42, category: 'music', question: 'The main singer in a band is called the:',
+          options: ['Lead guitarist', 'Drummer', 'Lead vocalist', 'Bass player'], correct: 2 },
+        { id: 43, category: 'music', question: 'The "chorus" of a song is:',
+          options: ['The intro', 'The part that repeats most often', 'The bridge', 'The outro'], correct: 1 },
+        { id: 44, category: 'music', question: 'Reggae music originally comes from:',
+          options: ['Brazil', 'Cuba', 'Jamaica', 'Haiti'], correct: 2 },
+        { id: 45, category: 'music', question: 'Elvis Presley is "The King of ___"?',
+          options: ['Jazz', 'Blues', 'Rock \'n\' Roll', 'Pop'], correct: 2 },
+        { id: 46, category: 'music', question: '"Bohemian Rhapsody" was performed by:',
+          options: ['The Beatles', 'ABBA', 'Queen', 'Pink Floyd'], correct: 2 },
+        { id: 47, category: 'music', question: 'A standard guitar has how many strings?',
+          options: ['4', '5', '6', '8'], correct: 2 },
+        { id: 48, category: 'music', question: 'An "unplugged" concert means:',
+          options: ['No lights used', 'Acoustic — no electric instruments', 'No singing', 'Outdoor only'], correct: 1 },
+        { id: 49, category: 'music', question: 'Michael Jackson\'s iconic dance move was:',
+          options: ['The Twist', 'The Robot', 'The Moonwalk', 'The Shuffle'], correct: 2 },
+        { id: 50, category: 'music', question: 'Which pop star is nicknamed "Queen Bey"?',
+          options: ['Rihanna', 'Beyoncé', 'Taylor Swift', 'Ariana Grande'], correct: 1 },
+        { id: 51, category: 'music', question: 'A "remix" of a song is:',
+          options: ['A new altered version', 'The original recording', 'Playing it backwards', 'A louder version'], correct: 0 },
+        { id: 52, category: 'music', question: 'The Grammy Awards celebrate excellence in:',
+          options: ['Movies', 'Books', 'Music', 'TV shows'], correct: 2 },
+        { id: 53, category: 'music', question: 'Hip-hop music originated in:',
+          options: ['Jamaica', 'UK', 'New York City', 'Los Angeles'], correct: 2 },
+        { id: 54, category: 'music', question: '"ABBA" is a band from which country?',
+          options: ['Norway', 'Denmark', 'Sweden', 'Finland'], correct: 2 },
+        { id: 55, category: 'music', question: '"Acoustic" music means:',
+          options: ['Electric and amplified', 'Natural sound without electricity', 'Very quiet', 'Live concerts only'], correct: 1 },
+        { id: 56, category: 'music', question: 'Taylor Swift is primarily known for which genre?',
+          options: ['Hip-hop', 'Jazz', 'Pop / Country', 'Heavy metal'], correct: 2 },
+        { id: 57, category: 'music', question: 'A "duet" is a performance by:',
+          options: ['One person (solo)', 'Two people', 'Three people', 'A large choir'], correct: 1 },
+        { id: 58, category: 'music', question: '"Karaoke" involves:',
+          options: ['Japanese cooking', 'Singing to recorded backing tracks', 'A type of drum', 'Film scoring'], correct: 1 },
+        { id: 59, category: 'music', question: '"Don\'t Stop Believin\'" is a classic song by:',
+          options: ['Bon Jovi', 'Journey', 'Foreigner', 'Aerosmith'], correct: 1 },
+        { id: 60, category: 'music', question: 'The "bridge" in a song is:',
+          options: ['The repeated chorus', 'A contrasting section before the final chorus', 'The intro', 'The ending'], correct: 1 },
+
+        // ── VOCABULARY & IDIOMS (20) ──
+        { id: 61, category: 'vocabulary', question: '"It\'s raining cats and dogs" means:',
+          options: ['Pets are outside', 'Raining very heavily', 'Animals are falling', 'A light drizzle'], correct: 1 },
+        { id: 62, category: 'vocabulary', question: '"Break a leg!" means:',
+          options: ['Cause an injury', 'Good luck', 'Work harder', 'Run faster'], correct: 1 },
+        { id: 63, category: 'vocabulary', question: '"Hit the sack" means:',
+          options: ['Punch a bag', 'Go to sleep', 'Start working', 'Go shopping'], correct: 1 },
+        { id: 64, category: 'vocabulary', question: '"Under the weather" means:',
+          options: ['Standing in rain', 'Feeling sick or unwell', 'Watching the forecast', 'Very cold'], correct: 1 },
+        { id: 65, category: 'vocabulary', question: '"Couch potato" describes:',
+          options: ['A vegetable dish', 'A lazy TV-watching person', 'A type of sofa', 'A great cook'], correct: 1 },
+        { id: 66, category: 'vocabulary', question: '"Once in a blue moon" means:',
+          options: ['Never', 'Every month', 'Very rarely', 'During a full moon'], correct: 2 },
+        { id: 67, category: 'vocabulary', question: '"Spill the beans" means:',
+          options: ['Drop your food', 'Reveal a secret', 'Cook a meal', 'Waste something'], correct: 1 },
+        { id: 68, category: 'vocabulary', question: '"Piece of cake" means:',
+          options: ['A dessert', 'Something very easy', 'Something expensive', 'A reward'], correct: 1 },
+        { id: 69, category: 'vocabulary', question: 'A "synonym" is:',
+          options: ['A word meaning the opposite', 'A word with a similar meaning', 'A foreign word', 'A made-up word'], correct: 1 },
+        { id: 70, category: 'vocabulary', question: 'An "antonym" is:',
+          options: ['A similar word', 'A word that sounds the same', 'A word with the opposite meaning', 'A language term'], correct: 2 },
+        { id: 71, category: 'vocabulary', question: '"The ball is in your court" means:',
+          options: ['A tennis term only', 'It\'s your responsibility / turn', 'You\'re losing', 'You\'re winning'], correct: 1 },
+        { id: 72, category: 'vocabulary', question: '"Let the cat out of the bag" means:',
+          options: ['Free a cat', 'Accidentally reveal a secret', 'Go shopping', 'Make a big mistake'], correct: 1 },
+        { id: 73, category: 'vocabulary', question: '"Procrastinate" means:',
+          options: ['Work very hard', 'Delay doing something', 'Finish early', 'Organize perfectly'], correct: 1 },
+        { id: 74, category: 'vocabulary', question: '"Cost an arm and a leg" means:',
+          options: ['A medical bill', 'Very expensive', 'Physical exercise', 'A dangerous activity'], correct: 1 },
+        { id: 75, category: 'vocabulary', question: 'To be "fluent" in a language means:',
+          options: ['Knowing a few words', 'Speaking slowly', 'Speaking easily and naturally', 'Using a dictionary'], correct: 2 },
+        { id: 76, category: 'vocabulary', question: '"Brainstorm" means:',
+          options: ['A mental storm', 'Generate many ideas quickly', 'A thunderstorm', 'Study very hard'], correct: 1 },
+        { id: 77, category: 'vocabulary', question: '"On the fence" about something means:',
+          options: ['Being outdoors', 'Being undecided / neutral', 'Very excited', 'Completely sure'], correct: 1 },
+        { id: 78, category: 'vocabulary', question: '"The tip of the iceberg" suggests:',
+          options: ['A small visible part of a bigger problem', 'Top of a mountain', 'Cold weather', 'A good start'], correct: 0 },
+        { id: 79, category: 'vocabulary', question: '"Bite off more than you can chew" means:',
+          options: ['Eat too much', 'Take on more than you can handle', 'Speak with mouth full', 'Be very hungry'], correct: 1 },
+        { id: 80, category: 'vocabulary', question: '"Call it a day" means:',
+          options: ['Make a phone call', 'Stop working for the day', 'Name a special day', 'Call someone'], correct: 1 },
+      ];
+
+      function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function buildPool() {
+        const pool = {};
+        for (const cat of CATS) {
+          pool[cat] = shuffle(ALL_QUESTIONS.filter(q => q.category === cat)).slice(0, QUESTIONS_PER_CAT);
+        }
+        return pool;
+      }
+
+      function Confetti() {
+        const colors = ['#F5C518', '#FF6B6B', '#00C9D4', '#9B5DE5', '#22D97A', '#fff'];
+        return (
+          <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 100 }}>
+            {Array.from({ length: 50 }).map((_, i) => (
+              <div key={i} style={{
+                position: 'absolute',
+                left: `${Math.random() * 100}%`,
+                top: '-20px',
+                width: `${6 + Math.random() * 8}px`,
+                height: `${6 + Math.random() * 8}px`,
+                borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+                background: colors[Math.floor(Math.random() * colors.length)],
+                animation: `confettiFall ${2 + Math.random() * 3}s ${Math.random() * 2}s linear forwards`,
+              }} />
+            ))}
+          </div>
+        );
+      }
+
+      function SetupScreen({ onStart }) {
+        const [teams, setTeams] = useState([
+          { name: 'Team Alpha', color: TEAM_COLORS[0], score: 0 },
+          { name: 'Team Beta',  color: TEAM_COLORS[1], score: 0 },
+        ]);
+
+        const addTeam = () => {
+          if (teams.length >= 4) return;
+          setTeams(prev => [...prev, { name: `Team ${['Alpha','Beta','Gamma','Delta'][prev.length]}`, color: TEAM_COLORS[prev.length], score: 0 }]);
+        };
+
+        return (
+          <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '40px' }} className="anim-slide-up">
+              <div style={{ fontSize: '60px', marginBottom: '12px' }}>🧠</div>
+              <h1 className="font-display" style={{ fontSize: 'clamp(38px, 6vw, 72px)', fontWeight: 900, margin: 0, lineHeight: 1, color: 'var(--yellow)', letterSpacing: '-2px' }}>
+                English Quiz
+              </h1>
+              <p style={{ marginTop: '10px', color: 'var(--muted)', fontSize: '17px', fontWeight: 500 }}>
+                Pick your theme each round · A2 – B1 level
+              </p>
             </div>
-        </div>
 
-        <div class="module" id="projects">
-            <div class="module-title">/projects</div>
-            <div class="module-text">
-                Учебные сайты, визуальные эксперименты,
-                необычные интерфейсы.
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '40px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {CATS.map(cat => {
+                const m = CAT_META[cat];
+                return (
+                  <div key={cat} style={{ padding: '8px 16px', borderRadius: '99px', background: `${m.color}14`, border: `1.5px solid ${m.color}44`, color: m.color, fontSize: '14px', fontWeight: 700, display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {m.emoji} {m.label}
+                  </div>
+                );
+              })}
             </div>
-        </div>
 
-        <div class="module" id="contacts">
-            <div class="module-title">/contacts</div>
-            <div class="module-text">
-                Email · GitHub · Telegram
+            <div style={{ width: '100%', maxWidth: '500px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700 }}>🏆 Teams</h2>
+                <button onClick={addTeam} disabled={teams.length >= 4} style={{ padding: '8px 18px', borderRadius: '99px', border: 'none', background: teams.length >= 4 ? 'var(--card)' : 'var(--card2)', color: teams.length >= 4 ? 'var(--muted)' : 'var(--text)', fontSize: '14px', fontWeight: 600, cursor: teams.length >= 4 ? 'not-allowed' : 'pointer' }}>
+                  + Add Team
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {teams.map((team, i) => (
+                  <div key={i} className="anim-slide-up" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 18px', borderRadius: '14px', background: 'var(--card)', border: `1.5px solid ${team.color}44`, animationDelay: `${i * 0.05}s` }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: team.color, flexShrink: 0, boxShadow: `0 0 14px ${team.color}66` }} />
+                    <input
+                      value={team.name}
+                      onChange={e => setTeams(prev => prev.map((t, idx) => idx === i ? { ...t, name: e.target.value } : t))}
+                      maxLength={20}
+                      style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: '17px', fontWeight: 700, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}
+                    />
+                    {teams.length > 2 && (
+                      <button onClick={() => setTeams(prev => prev.filter((_, idx) => idx !== i))} style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: 'var(--card2)', color: 'var(--muted)', cursor: 'pointer', fontSize: '16px' }}>×</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: '18px', padding: '14px 20px', borderRadius: '12px', background: 'var(--card)', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                {[['🎯', '20', 'Questions'], ['⏱️', `${TIME_PER_QUESTION}s`, 'Per round'], ['⭐', '10pts', 'Correct']].map(([e, v, l]) => (
+                  <div key={l}>
+                    <div style={{ fontSize: '18px' }}>{e}</div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--yellow)' }}>{v}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>{l}</div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => onStart(teams)}
+                disabled={teams.some(t => !t.name.trim())}
+                style={{ width: '100%', marginTop: '20px', padding: '18px', borderRadius: '14px', border: 'none', background: 'var(--yellow)', color: '#0D1B2A', fontSize: '19px', fontWeight: 800, cursor: 'pointer', fontFamily: 'Fraunces, serif', letterSpacing: '-0.5px', boxShadow: '0 0 32px rgba(245,197,24,0.35)', transition: 'transform 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+              >
+                🚀 Start Quiz!
+              </button>
             </div>
-        </div>
+          </div>
+        );
+      }
 
-    </section>
+      function CategoryPicker({ pool, teams, teamIndex, answeredCount, totalQuestions, onPick }) {
+        const team = teams[teamIndex];
 
-    <!-- ====== OUTRO ====== -->
-    <footer class="outro">
-        wake up · 2026
-    </footer>
+        return (
+          <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+            <div style={{ width: '100%', maxWidth: '700px', marginBottom: '32px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span style={{ color: 'var(--muted)', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Question {answeredCount + 1} of {totalQuestions}</span>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  {teams.map((t, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '99px', background: i === teamIndex ? `${t.color}22` : 'var(--card)', border: `1.5px solid ${i === teamIndex ? t.color + '88' : 'transparent'}` }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: t.color }} />
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: i === teamIndex ? t.color : 'var(--muted)' }}>{t.score}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ height: '4px', background: 'var(--card)', borderRadius: '2px' }}>
+                <div style={{ height: '100%', borderRadius: '2px', background: team.color, width: `${(answeredCount / totalQuestions) * 100}%`, transition: 'width 0.5s' }} />
+              </div>
+            </div>
 
-</div>
+            <div style={{ textAlign: 'center', marginBottom: '36px' }} className="anim-pop">
+              <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: team.color, margin: '0 auto 14px', boxShadow: `0 0 24px ${team.color}88`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>
+                {['🅐','🅑','🅒','🅓'][teamIndex]}
+              </div>
+              <h2 className="font-display" style={{ margin: 0, fontSize: 'clamp(22px, 4vw, 36px)', fontWeight: 900, color: team.color, letterSpacing: '-1px' }}>
+                {team.name}
+              </h2>
+              <p style={{ marginTop: '8px', color: 'var(--muted)', fontSize: '16px' }}>Pick a theme for your question!</p>
+            </div>
 
-</body>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', width: '100%', maxWidth: '640px' }}>
+              {CATS.map(cat => {
+                const m = CAT_META[cat];
+                const remaining = pool[cat].length;
+                const empty = remaining === 0;
+
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => !empty && onPick(cat)}
+                    disabled={empty}
+                    className={empty ? '' : 'anim-pop'}
+                    style={{
+                      padding: '28px 24px',
+                      borderRadius: '20px',
+                      border: `2px solid ${empty ? 'var(--border)' : m.color + '66'}`,
+                      background: empty ? 'var(--card)' : `${m.color}14`,
+                      cursor: empty ? 'not-allowed' : 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s',
+                      opacity: empty ? 0.4 : 1,
+                      position: 'relative',
+                      overflow: 'hidden',
+                    }}
+                    onMouseEnter={e => { if (!empty) { e.currentTarget.style.background = `${m.color}28`; e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = `0 8px 32px ${m.color}33`; } }}
+                    onMouseLeave={e => { if (!empty) { e.currentTarget.style.background = `${m.color}14`; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; } }}
+                  >
+                    <div style={{ position: 'absolute', right: '16px', bottom: '10px', fontSize: '52px', opacity: 0.12, userSelect: 'none' }}>{m.emoji}</div>
+                    <div style={{ fontSize: '30px', marginBottom: '10px' }}>{m.emoji}</div>
+                    <div className="font-display" style={{ fontSize: '22px', fontWeight: 800, color: empty ? 'var(--muted)' : m.color, marginBottom: '4px', letterSpacing: '-0.5px' }}>
+                      {m.label}
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '14px' }}>{m.desc}</div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '99px', background: empty ? 'var(--card2)' : `${m.color}22`, border: `1px solid ${empty ? 'transparent' : m.color + '44'}` }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: empty ? 'var(--muted)' : m.color }}>
+                        {empty ? 'Used up!' : `${remaining} question${remaining !== 1 ? 's' : ''} left`}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
+
+      function AnswerBtn({ label, index, letter, selectedAnswer, correctAnswer, disabled, onClick }) {
+        const isSelected = selectedAnswer === index;
+        const isCorrect = correctAnswer === index;
+        const revealed = selectedAnswer !== null;
+
+        let bg = 'var(--card)', border = 'rgba(255,255,255,0.08)', color = 'var(--text)', animClass = '', icon = '';
+        if (revealed) {
+          if (isCorrect)       { bg = 'rgba(34,217,122,0.15)'; border = '#22D97A'; color = '#22D97A'; icon = '✓'; }
+          else if (isSelected) { bg = 'rgba(255,71,87,0.15)';  border = '#FF4757'; color = '#FF4757'; icon = '✗'; }
+          else                 { color = 'var(--muted)'; }
+        }
+
+        return (
+          <button onClick={onClick} disabled={disabled} className={animClass} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 20px', borderRadius: '14px', width: '100%', textAlign: 'left', background: bg, border: `1.5px solid ${border}`, color, fontSize: '16px', fontWeight: 600, fontFamily: 'Outfit, sans-serif', cursor: disabled ? 'default' : 'pointer', transition: 'all 0.2s' }}
+            onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = 'var(--card2)'; }}
+            onMouseLeave={e => { if (!disabled) e.currentTarget.style.background = bg; }}
+          >
+            <span style={{ width: '30px', height: '30px', borderRadius: '8px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: revealed ? 'transparent' : 'var(--card2)', border: revealed ? '1.5px solid currentColor' : '1px solid rgba(255,255,255,0.1)', fontSize: '13px', fontWeight: 800, fontFamily: 'Fraunces, serif' }}>
+              {letter}
+            </span>
+            <span style={{ flex: 1 }}>{label}</span>
+            {icon && <span style={{ fontSize: '18px', fontWeight: 900 }}>{icon}</span>}
+          </button>
+        );
+      }
+
+      function QuizScreen({ teams, teamIndex, question, questionNumber, totalQuestions, timeLeft, selectedAnswer, onAnswer }) {
+        const m = CAT_META[question.category];
+        const team = teams[teamIndex];
+        const timerPct = (timeLeft / TIME_PER_QUESTION) * 100;
+        const timerColor = timeLeft > 10 ? '#22D97A' : timeLeft > 5 ? '#F5C518' : '#FF4757';
+
+        return (
+          <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'grid', gridTemplateColumns: '1fr 260px', maxWidth: '1100px', margin: '0 auto', padding: '24px', gap: '24px' }} className="quiz-grid">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ padding: '6px 14px', borderRadius: '99px', background: `${m.color}20`, color: m.color, fontSize: '14px', fontWeight: 700, border: `1px solid ${m.color}44` }}>
+                  {m.emoji} {m.label}
+                </span>
+                <span style={{ color: 'var(--muted)', fontSize: '14px', fontWeight: 600 }}>Q {questionNumber} / {totalQuestions}</span>
+              </div>
+
+              <div style={{ height: '4px', background: 'var(--card)', borderRadius: '2px' }}>
+                <div style={{ height: '100%', borderRadius: '2px', background: m.color, width: `${(questionNumber / totalQuestions) * 100}%`, transition: 'width 0.4s' }} />
+              </div>
+
+              <div style={{ padding: '12px 18px', borderRadius: '12px', background: `${team.color}18`, border: `1.5px solid ${team.color}55`, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: team.color, boxShadow: `0 0 8px ${team.color}` }} />
+                <span style={{ fontWeight: 700, color: team.color, fontSize: '15px' }}>{team.name}'s turn</span>
+                <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: '13px' }}>Score: <b style={{ color: team.color }}>{team.score}</b></span>
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: 'var(--muted)', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Time</span>
+                  <span style={{ fontWeight: 900, fontSize: '20px', color: timerColor, fontFamily: 'Fraunces, serif', transition: 'color 0.3s' }}>{timeLeft}s</span>
+                </div>
+                <div style={{ height: '8px', background: 'var(--card)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', borderRadius: '4px', background: timerColor, width: `${timerPct}%`, transition: 'width 1s linear, background 0.3s', boxShadow: `0 0 10px ${timerColor}88` }} />
+                </div>
+              </div>
+
+              <div key={question.id} className="anim-pop" style={{ padding: '30px', borderRadius: '20px', background: 'var(--card)', border: '1px solid var(--border)', minHeight: '130px', display: 'flex', alignItems: 'center' }}>
+                <p className="font-display" style={{ margin: 0, fontSize: 'clamp(19px, 2.5vw, 26px)', fontWeight: 700, lineHeight: 1.35, color: 'var(--text)' }}>
+                  {question.question}
+                </p>
+              </div>
+
+              <div key={`opts-${question.id}`} className="options-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                {question.options.map((opt, i) => (
+                  <AnswerBtn key={i} index={i} letter={['A','B','C','D'][i]} label={opt}
+                    selectedAnswer={selectedAnswer} correctAnswer={question.correct}
+                    disabled={selectedAnswer !== null} onClick={() => onAnswer(i)} />
+                ))}
+              </div>
+            </div>
+
+            <div className="quiz-sidebar" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>🏆 Scores</h3>
+              {[...teams].map((t, i) => ({ ...t, origIdx: i })).sort((a, b) => b.score - a.score).map((t, rank) => (
+                <div key={t.origIdx} style={{ padding: '12px 14px', borderRadius: '12px', background: t.origIdx === teamIndex ? `${t.color}18` : 'var(--card)', border: `1.5px solid ${t.origIdx === teamIndex ? t.color + '66' : 'var(--border)'}`, display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.3s' }}>
+                  <span style={{ fontSize: '14px' }}>{['🥇','🥈','🥉','4️⃣'][rank]}</span>
+                  <div style={{ width: '9px', height: '9px', borderRadius: '50%', background: t.color, flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
+                  <span className="font-display" style={{ fontSize: '22px', fontWeight: 900, color: t.color }}>{t.score}</span>
+                </div>
+              ))}
+
+              <div style={{ marginTop: '8px', padding: '14px', borderRadius: '12px', background: 'var(--card)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>Themes</div>
+                {CATS.map(cat => {
+                  const cm = CAT_META[cat];
+                  return (
+                    <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '13px' }}>{cm.emoji}</span>
+                      <span style={{ fontSize: '12px', color: cm.color, fontWeight: 600, flex: 1 }}>{cm.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function ResultsScreen({ teams, totalQuestions, onPlayAgain }) {
+        const sorted = [...teams].sort((a, b) => b.score - a.score);
+        const winner = sorted[0];
+        const isTie = sorted.length > 1 && sorted[0].score === sorted[1].score;
+
+        return (
+          <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+            <Confetti />
+            <div style={{ textAlign: 'center', marginBottom: '36px' }} className="anim-pop">
+              <div style={{ fontSize: '68px', marginBottom: '10px' }}>{isTie ? '🤝' : '🏆'}</div>
+              <h1 className="font-display" style={{ fontSize: 'clamp(30px, 5vw, 58px)', fontWeight: 900, margin: 0, lineHeight: 1, color: 'var(--yellow)', letterSpacing: '-2px' }}>
+                {isTie ? 'It\'s a Tie!' : `${winner.name} Wins!`}
+              </h1>
+              <p style={{ marginTop: '10px', color: 'var(--muted)', fontSize: '16px' }}>
+                {isTie ? 'Two teams at the top — incredible!' : `Congratulations to ${winner.name}! 🎉`}
+              </p>
+            </div>
+
+            <div style={{ width: '100%', maxWidth: '480px', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '36px' }}>
+              {sorted.map((team, rank) => (
+                <div key={team.name} className="anim-slide-up" style={{ padding: '18px 22px', borderRadius: '16px', background: rank === 0 ? `${team.color}20` : 'var(--card)', border: `2px solid ${rank === 0 ? team.color : 'var(--border)'}`, display: 'flex', alignItems: 'center', gap: '14px', animationDelay: `${rank * 0.1}s`, boxShadow: rank === 0 ? `0 0 36px ${team.color}33` : 'none' }}>
+                  <span style={{ fontSize: '26px' }}>{['🥇','🥈','🥉','4️⃣'][rank]}</span>
+                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: team.color, boxShadow: `0 0 10px ${team.color}` }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '18px', fontWeight: 700, color: rank === 0 ? team.color : 'var(--text)' }}>{team.name}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{Math.round((team.score / (totalQuestions * 10)) * 100)}% accuracy</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="font-display" style={{ fontSize: '30px', fontWeight: 900, color: rank === 0 ? team.color : 'var(--text)' }}>{team.score}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)' }}>pts</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button onClick={onPlayAgain} style={{ padding: '16px 44px', borderRadius: '14px', border: 'none', background: 'var(--yellow)', color: '#0D1B2A', fontSize: '17px', fontWeight: 800, cursor: 'pointer', fontFamily: 'Fraunces, serif', boxShadow: '0 0 30px rgba(245,197,24,0.4)', transition: 'transform 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-3px)')}
+              onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}>
+              🔄 Play Again
+            </button>
+          </div>
+        );
+      }
+
+      function App() {
+        const [screen, setScreen] = useState('setup');
+        const [teams, setTeams] = useState([]);
+        const [pool, setPool] = useState({});
+        const [teamIndex, setTeamIndex] = useState(0);
+        const [currentQuestion, setCurrentQuestion] = useState(null);
+        const [answeredCount, setAnsweredCount] = useState(0);
+        const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION);
+        const [selectedAnswer, setSelectedAnswer] = useState(null);
+
+        const totalQuestions = QUESTIONS_PER_CAT * CATS.length;
+        const handleAnswerRef = useRef(() => {});
+
+        const handleAnswer = useCallback((answerIndex) => {
+          if (selectedAnswer !== null) return;
+          setSelectedAnswer(answerIndex);
+
+          const correct = currentQuestion !== null && answerIndex === currentQuestion.correct;
+          if (correct) {
+            setTeams(prev => prev.map((t, i) => i === teamIndex ? { ...t, score: t.score + 10 } : t));
+          }
+
+          const nextAnswered = answeredCount + 1;
+          setTimeout(() => {
+            if (nextAnswered >= totalQuestions) {
+              setScreen('results');
+            } else {
+              setAnsweredCount(nextAnswered);
+              setTeamIndex(prev => (prev + 1) % teams.length);
+              setCurrentQuestion(null);
+              setSelectedAnswer(null);
+              setTimeLeft(TIME_PER_QUESTION);
+              setScreen('category');
+            }
+          }, 1800);
+        }, [selectedAnswer, currentQuestion, answeredCount, teamIndex, teams.length, totalQuestions]);
+
+        handleAnswerRef.current = handleAnswer;
+
+        useEffect(() => {
+          if (screen !== 'quiz' || selectedAnswer !== null) return;
+          const interval = setInterval(() => {
+            setTimeLeft(prev => {
+              if (prev <= 1) { clearInterval(interval); handleAnswerRef.current(-1); return 0; }
+              return prev - 1;
+            });
+          }, 1000);
+          return () => clearInterval(interval);
+        }, [screen, currentQuestion, selectedAnswer]);
+
+        const startGame = (newTeams) => {
+          setTeams(newTeams.map(t => ({ ...t, score: 0 })));
+          setPool(buildPool());
+          setTeamIndex(0);
+          setAnsweredCount(0);
+          setCurrentQuestion(null);
+          setSelectedAnswer(null);
+          setTimeLeft(TIME_PER_QUESTION);
+          setScreen('category');
+        };
+
+        const pickCategory = (cat) => {
+          const remaining = pool[cat];
+          if (!remaining.length) return;
+          const [question, ...rest] = remaining;
+          setPool(prev => ({ ...prev, [cat]: rest }));
+          setCurrentQuestion(question);
+          setSelectedAnswer(null);
+          setTimeLeft(TIME_PER_QUESTION);
+          setScreen('quiz');
+        };
+
+        if (screen === 'setup')    return <SetupScreen onStart={startGame} />;
+        if (screen === 'category') return <CategoryPicker pool={pool} teams={teams} teamIndex={teamIndex} answeredCount={answeredCount} totalQuestions={totalQuestions} onPick={pickCategory} />;
+        if (screen === 'quiz' && currentQuestion) return <QuizScreen teams={teams} teamIndex={teamIndex} question={currentQuestion} questionNumber={answeredCount + 1} totalQuestions={totalQuestions} timeLeft={timeLeft} selectedAnswer={selectedAnswer} onAnswer={handleAnswer} />;
+        if (screen === 'results')  return <ResultsScreen teams={teams} totalQuestions={totalQuestions} onPlayAgain={() => setScreen('setup')} />;
+        return null;
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
 </html>
